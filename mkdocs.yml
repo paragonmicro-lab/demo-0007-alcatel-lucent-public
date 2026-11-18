@@ -1,0 +1,83 @@
+# CLASS SITE: the lab-standard template (core-web docs/class-site-kit, standard: docs/class-sites.md).
+# Copy class/ into your demo repo and change the lines marked ✏️ (content). The STRUCTURE (the "Start here" welcome page
+# first, the page order, Downloads, Get help, the build checks) and the Paragon Micro LAB LOOK (colour scheme + fonts,
+# brand/paragon.css) are the default on every class site. Lines marked 🏷️ carry Paragon Micro LOGOS / BANNERS / CREDIT:
+# a demo that cannot show Paragon marks (e.g. sponsor-funded) removes those lines and keeps everything else.
+# A demo may deviate further where it must; say what and why in the class README.
+#
+# Built by your publisher with `mkdocs build --strict`: a broken link or a page missing from nav FAILS the publish.
+
+site_name: "Alcatel-Lucent HA switching: student guide"
+site_description: "Tour a live OmniSwitch Virtual Chassis, build it by hand and as code, and run it as code"
+site_url: !ENV [CLASS_SITE_URL, ""]                     # set by core (vars.CLASS_SITE_URL); never hard-code it
+docs_dir: docs
+use_directory_urls: false                               # relative links in git work unchanged on the site
+copyright: "© Paragon Micro · Paragon Micro lab · published from the class source; changes made here are overwritten"   # 🏷️ no Paragon marks: "Published from the class source; changes made here are overwritten" 
+
+theme:
+  name: material
+  logo: brand/logomark.svg                              # 🏷️ Paragon logomark: remove both lines if the demo cannot carry Paragon marks
+  favicon: brand/logomark.svg
+  font:
+    text: Roboto                                        # body face on every site; Paragon headings are Poppins (paragon.css)
+    code: Roboto Mono
+  features:
+    - content.code.copy                                 # a copy button on every command block
+    - navigation.sections
+    - navigation.top
+    - navigation.footer
+    - search.highlight
+    - toc.follow
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: custom                                   # brand colours come from brand/paragon.css
+      accent: custom
+      toggle: { icon: material/weather-night, name: Dark mode }
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: custom
+      accent: custom
+      toggle: { icon: material/weather-sunny, name: Light mode }
+
+extra_css:
+  - brand/class.css                                     # the layout (Start here splash, step cards)
+  - brand/paragon.css                                   # the Paragon Micro lab colour scheme + fonts: the default look
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - toc: { permalink: true }
+  - pymdownx.details
+  - pymdownx.highlight: { anchor_linenums: false }
+  - pymdownx.inlinehilite
+  - pymdownx.superfences:
+      custom_fences:
+        - { name: mermaid, class: mermaid, format: !!python/name:pymdownx.superfences.fence_code_format }
+
+validation:
+  nav:
+    omitted_files: warn                                 # a published page missing from nav: --strict fails it
+  links:
+    not_found: warn                                     # --strict turns these into failures
+    anchors: info
+
+# ⭐ The ORDER is the standard: Start here (the Paragon welcome splash) first, then the guide, then the labs in the order
+# they are taught, then Downloads, then Reference. Only the labs and reference pages change per class.
+nav:
+  - "Start here": index.md
+  - "Student guide": student-guide.md
+  - "Labs":
+      - "Lab 0: Access and tools": guides/00-access-and-tools.md
+      - "Lab 1: Tour a live HA fabric": guides/01-tour-the-fabric.md
+      - "Lab 2: Build it by hand, then as code": guides/02-ui-versus-code.md
+      - "Lab 3: Run the fabric as code": guides/03-fabric-as-code.md
+      - "Lab 4: OmniVista Cirrus (coming soon)": guides/04-omnivista-cirrus.md
+  - "Downloads": downloads.md
+  - "Get help": help.md
+  - "Reference":
+      - "Lab S: How this lab was built": guides/setup-how-the-lab-is-built.md
+      - "Toolkit: commands, snapshot and code": guides/toolkit.md
+      - "Lab diagram": guides/lab-diagram.md

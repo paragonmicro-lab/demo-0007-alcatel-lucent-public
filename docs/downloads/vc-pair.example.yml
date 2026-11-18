@@ -1,0 +1,46 @@
+# vc-pair.example.yml: an Alcatel-Lucent OmniSwitch HA pair (Virtual Chassis), declared as data.
+# EXAMPLE VALUES ONLY (192.0.2.0/24 is the documentation range). Same shape as the Paragon Micro lab's network pipeline:
+# every line is in the switch's canonical `show configuration snapshot` form; the pipeline sends only lines the switch is
+# missing, reads every line back, and saves only after the read-back passes. Lines it does not declare are reported, never removed.
+#
+# Day 0 (console, once, logged): chassis identity, priorities, stack-link ports, management addresses, accounts.
+# Everything below is day 1+ and converges on every run.
+
+system:
+  name: vc-demo
+  contact: "network IaC pipeline"
+  location: "sandbox rack"
+
+dns:
+  domain: example.internal
+  servers: [192.0.2.53, 192.0.2.54]
+
+ntp:
+  servers: [192.0.2.123]
+
+syslog:
+  servers: [192.0.2.11, 192.0.2.12]
+
+vlans:
+  50: compute-50
+  60: storage-60
+  70: vm-70
+
+# One member port per chassis (1/1/x and 2/1/x), dynamic LACP, actor admin-key = bond id (ids 0-127 on the OS6900-V48C8).
+# admin: disable = created shut; enable when the server's cables are in and its bond is up.
+_server_vlans: &server_vlans [50, 70]
+linkaggs:
+  - { id: 1,  name: server01-bond0, ports: [1/1/1, 2/1/1], vlans: *server_vlans, admin: enable }
+  - { id: 2,  name: server02-bond0, ports: [1/1/3, 2/1/3], vlans: *server_vlans, admin: disable }
+  - { id: 11, name: server01-bond1, ports: [1/1/2, 2/1/2], vlans: [60],          admin: enable }
+
+# Read-only checks after EVERY run: command -> regexes that must all match. A failure turns the run red.
+asserts:
+  - cmd: show virtual-chassis topology
+    match: ['(?m)^\s*1\s+Master\s+Running', '(?m)^\s*2\s+Slave\s+Running']
+  - cmd: show virtual-chassis vf-link
+    match: ['(?m)^\s*1/0\s+Up\s', '(?m)^\s*2/0\s+Up\s']
+  - cmd: show virtual-chassis consistency
+    match: ['(?m)^\s*1\s+.*\bOK\b', '(?m)^\s*2\s+.*\bOK\b']
+  - cmd: show auto-fabric config
+    match: ['Auto-fabric Status\s*:\s*Disable']
