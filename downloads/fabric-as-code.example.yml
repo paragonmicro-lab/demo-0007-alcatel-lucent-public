@@ -1,0 +1,58 @@
+# fabric-as-code.example.yml: the shape of a switch-fabric pipeline (GitHub Actions). EXAMPLE: adapt the playbook and the
+# runner to your environment. The runner must reach the switches' management network, so it is self-hosted, inside.
+#
+#   push to main         -> PLAN  (check mode: the lines that WOULD be sent; nothing is sent)
+#   dispatch apply=true  -> APPLY (behind an environment approval): backup, send missing lines, read back, save, backup
+#   every morning        -> PLAN  for drift: red if the switch differs from the code
+name: fabric
+
+on:
+  push:
+    branches: [main]
+    paths: ["network/**"]
+  schedule:
+    - cron: "17 6 * * *"
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: "true = apply (needs approval). false = plan only."
+        type: boolean
+        default: false
+
+concurrency:              # one run per fabric at a time; never cancel one that is saving
+  group: fabric
+  cancel-in-progress: false
+
+jobs:
+  plan:
+    if: ${{ !inputs.apply }}
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+      - name: Plan (check mode) — fails the run on drift during the daily schedule
+        env:
+          SWITCH_PASSWORD: ${{ secrets.SWITCH_AUTOMATION_PASSWORD }}
+        run: |
+          ansible-playbook network/fabric.yml -e @network/vc-pair.yml --check --diff | tee plan.log
+          changes=$(grep -oE 'changes=[0-9]+' plan.log | tail -1 | cut -d= -f2)
+          echo "### plan: ${changes:-0} change(s)" >> "$GITHUB_STEP_SUMMARY"
+          if [ "${{ github.event_name }}" = "schedule" ] && [ "${changes:-0}" != "0" ]; then
+            echo "::error::drift: the switch differs from the code"; exit 1
+          fi
+
+  apply:
+    if: ${{ inputs.apply }}
+    runs-on: self-hosted
+    environment: network-change          # required reviewer: a person approves every apply
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply (backup, send missing lines, read back, save only after the read-back)
+        env:
+          SWITCH_PASSWORD: ${{ secrets.SWITCH_AUTOMATION_PASSWORD }}
+        run: ansible-playbook network/fabric.yml -e @network/vc-pair.yml --diff
+      - name: Re-plan must report 0 changes (idempotency)
+        env:
+          SWITCH_PASSWORD: ${{ secrets.SWITCH_AUTOMATION_PASSWORD }}
+        run: |
+          ansible-playbook network/fabric.yml -e @network/vc-pair.yml --check | tee replan.log
+          grep -qE 'changes=0' replan.log || { echo "::error::re-plan is not clean"; exit 1; }

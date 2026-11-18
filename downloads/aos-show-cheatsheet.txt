@@ -1,0 +1,29 @@
+Alcatel-Lucent OmniSwitch (AOS 8) - read-only command cheat sheet
+Every command here only SHOWS something. None of them changes the switch.
+
+Virtual Chassis (the HA pair)
+  show virtual-chassis topology        who is master / slave, and are both Running
+  show virtual-chassis vf-link         the stack links (VFL) between the chassis
+  show virtual-chassis consistency     do both chassis agree (software, group, control VLAN)
+  show virtual-chassis auto-vf-link-port   which ports may become stack links
+
+Server attachment (LACP across both chassis)
+  show linkagg                         every bond, its size and state
+  show linkagg port                    every member port and its LACP partner
+
+Layer 2
+  show vlan                            VLANs and their state
+  show interfaces status               link, speed, duplex per port
+  show interfaces counters             traffic counters
+  show interfaces counters errors      error counters
+
+Configuration state
+  show running-directory               running from WORKING or CERTIFIED (the rollback copy)
+  show configuration status            is the running configuration saved
+
+Hardware and services
+  show chassis | show hardware-info | show fan | show temperature | show power-supply
+  show ntp status                      time sync
+  show microcode                       software version
+
+Port names are chassis/slot/port: 1/1/5 is chassis 1, slot 1, port 5.
